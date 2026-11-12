@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101b31" />
+  <meta name="description" content="ラブライブ！シリーズ897問イントロクイズの採点補助ページ。1問ずつ正解・不正解を記録し、途中保存・集計・結果の共有ができます。" />
+  <title>897問イントロクイズ｜採点ページ</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0a1120; --panel:#121e33; --panel2:#172640; --line:#2a3a57; --ink:#f1f5fc; --muted:#a3b2ca; --quiet:#7d91ac; --accent:#75d8d1; --ok:#5bdbb3; --bad:#ff8d9b; --none:#263652; --shadow:0 20px 48px #02071465; }
+    *,*::before,*::after{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:24px}
+    body{margin:0;background:radial-gradient(ellipse 800px 420px at 85% -10%,#173651 0%,transparent 65%),radial-gradient(ellipse 550px 600px at -10% 36%,#172341 0%,transparent 68%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.6;min-height:100vh}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.4}
+    button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+    .wrapper{max-width:1190px;margin:auto;padding:30px 24px 90px}
+    .masthead{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:30px}
+    .eyebrow{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--accent);margin:0 0 8px}
+    h1{margin:0;font-size:clamp(30px,4vw,50px);font-weight:850;letter-spacing:-.055em;line-height:1.24}
+    .subtitle{color:var(--muted);margin:12px 0 0;font-size:14px}
+    .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .save-status{font-size:12px;color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+    .dot{width:7px;height:7px;background:var(--ok);border-radius:50%;display:inline-block;box-shadow:0 0 0 4px #5bdbb315}
+    .dot.warning{background:var(--bad);box-shadow:0 0 0 4px #ff8d9b15}
+    .btn{border:1px solid var(--line);border-radius:11px;background:#192b47;color:var(--ink);padding:11px 15px;font-size:13px;font-weight:750;transition:background .18s,border-color .18s,transform .18s;white-space:nowrap}
+    .btn:not(:disabled):hover{background:#243c5f;border-color:#526987}
+    .btn:active{transform:scale(.97)}
+    .btn.primary{background:var(--accent);color:#071b29;border-color:var(--accent)}
+    .btn.primary:hover{background:#a4efe9}
+    .btn.plain{background:transparent}
+    .btn.danger{color:var(--bad)}
+    .layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(285px,1fr);gap:22px;align-items:start}
+    .maincol,.sidebar{display:grid;gap:22px;min-width:0}
+    .card{background:linear-gradient(135deg,#142238,#121e33);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+    .card-pad{padding:24px}
+    .section-heading{font-size:17px;font-weight:850;letter-spacing:-.02em;margin:0}
+    .section-desc{color:var(--muted);font-size:12px;margin:5px 0 0}
+    .question-card{position:relative;isolation:isolate}
+    .question-card:before{content:"";position:absolute;z-index:-1;right:-95px;top:-100px;width:300px;height:270px;background:radial-gradient(circle,#6bd4d51a,transparent 65%);pointer-events:none}
+    .question-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800;background:#203c4d;color:var(--accent);border:1px solid #395971;white-space:nowrap}
+    .pill.ok{background:#17413d;color:var(--ok);border-color:#2f685d}
+    .pill.bad{background:#4a2b3c;color:var(--bad);border-color:#6c4155}
+    .question-display{display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 0 20px}
+    .overline{font-size:12px;letter-spacing:.25em;font-weight:800;color:var(--muted)}
+    .qnumber{font-size:clamp(74px,12vw,112px);line-height:1.2;font-weight:900;letter-spacing:-.085em;font-variant-numeric:tabular-nums;text-indent:-.08em;margin-top:4px}
+    .qnumber .numsmall{font-size:19px;letter-spacing:0;font-weight:650;color:var(--quiet);text-indent:0;vertical-align:baseline;padding-left:7px}
+    .qstate{font-size:13px;font-weight:700;color:var(--muted)}
+    .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 14px}
+    .mark-btn{border:1px solid transparent;border-radius:16px;padding:22px 12px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:20px;font-weight:850;min-height:84px;transition:transform .14s,filter .14s}
+    .mark-btn:hover{filter:brightness(1.12)}
+    .mark-btn:active{transform:scale(.98)}
+    .mark-btn .symbol{font-size:35px;line-height:1;font-weight:800}
+    .mark-btn.ok{color:#06261f;background:var(--ok)}
+    .mark-btn.bad{color:#38111a;background:var(--bad)}
+    .action-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .mini-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+    .check-label{display:inline-flex;gap:7px;align-items:center;color:var(--muted);font-size:12px;cursor:pointer;white-space:nowrap}
+    .check-label input{accent-color:var(--accent);width:15px;height:15px}
+    .move-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;padding-top:17px;border-top:1px solid var(--line)}
+    .move-controls button{width:100%}
+    .shortcuts{font-size:12px;color:var(--quiet);text-align:center;margin:13px 0 0}
+    kbd{background:#283b56;border:1px solid #38516f;border-radius:5px;padding:2px 5px;color:#d3e0ef;font-size:11px}
+    .card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .stats-num{font-size:40px;line-height:1.3;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+    .stats-num span{font-size:14px;color:var(--muted);font-weight:700;letter-spacing:0}
+    .stats-label{font-size:13px;color:var(--muted);margin:0 0 6px}
+    .stat-main{margin:17px 0 21px}
+    .progress{height:10px;background:#2a3c56;border-radius:100px;overflow:hidden;display:flex}
+    .progress .green{background:var(--ok);height:100%;transition:width .2s}
+    .progress .pink{background:var(--bad);height:100%;transition:width .2s}
+    .legend{display:flex;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:13px}
+    .legend i{width:8px;height:8px;border-radius:3px;display:inline-block;margin-right:5px}
+    .small-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:20px}
+    .small-stat{padding:13px 12px;border:1px solid var(--line);border-radius:12px;background:#17263f}
+    .small-stat strong{display:block;font-size:24px;line-height:1.4;font-variant-numeric:tabular-nums}
+    .small-stat span{color:var(--muted);font-size:11px}
+    .stat-actions{display:grid;gap:9px;margin-top:19px}
+    .jump-form{display:flex;gap:9px;align-items:center;margin:19px 0 12px}
+    .jump-form input{width:100%;min-width:0;border:1px solid #3c5272;background:#0d192c;color:var(--ink);border-radius:11px;padding:11px 14px;outline:0}
+    .jump-form label{font-size:12px;color:var(--muted);flex-shrink:0}
+    .segment-tabs{display:flex;gap:6px;overflow-x:auto;padding:3px 0 10px;scrollbar-color:#3b536d transparent;scrollbar-width:thin}
+    .segment-tabs button{background:#1a2a43;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:11px;font-weight:750;white-space:nowrap}
+    .segment-tabs button[aria-selected=true]{background:#265257;color:#c4fffa;border-color:#49958d}
+    .number-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin:13px 0 9px}
+    .number-grid button{width:100%;aspect-ratio:1;min-height:0;border:1px solid #304461;border-radius:7px;background:#1c2c45;color:#a3b2ca;font-size:clamp(10px,1vw,12px);font-weight:800;font-variant-numeric:tabular-nums;padding:0}
+    .number-grid button.ok{background:#174a42;border-color:#337764;color:#8aefd0}
+    .number-grid button.bad{background:#54313f;border-color:#865060;color:#ffb9c5}
+    .number-grid button.current{outline:2px solid #fff;outline-offset:1px;color:#fff}
+    .number-grid button:hover{filter:brightness(1.25)}
+    .grid-bottom{color:var(--quiet);font-size:12px;display:flex;gap:15px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px}
+    .segment-list{margin-top:14px;display:grid;gap:9px}
+    .segment-row{border:1px solid var(--line);background:#17273f;border-radius:11px;padding:11px 12px;text-align:left;color:var(--ink);width:100%}
+    .segment-row:hover{background:#203653}
+    .segment-info{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:12px;margin-bottom:8px}
+    .segment-info strong{font-variant-numeric:tabular-nums}
+    .segment-info span{color:var(--muted)}
+    .segment-progress{height:5px;background:#2b3a52;border-radius:4px;overflow:hidden;display:flex}
+    .segment-progress .correct{background:var(--ok)}
+    .segment-progress .wrong{background:var(--bad)}
+    .help-card{background:#111d2e}
+    .help-list{font-size:13px;color:var(--muted);padding-left:19px;margin:15px 0 0}
+    .help-list li{margin:7px 0}
+    .help-card strong{color:var(--ink)}
+    footer{font-size:12px;color:var(--quiet);text-align:center;margin-top:32px}
+    .mobile-dock{display:none}
+    .toast{position:fixed;z-index:100;bottom:24px;left:50%;transform:translate(-50%,14px);border-radius:12px;padding:12px 18px;color:var(--ink);background:#284463;box-shadow:var(--shadow);border:1px solid #5c7796;font-size:13px;font-weight:750;opacity:0;pointer-events:none;transition:.2s;text-align:center;max-width:90vw}
+    .toast.show{transform:translate(-50%,0);opacity:1}
+    dialog{background:var(--panel);color:var(--ink);border:1px solid #50617d;border-radius:20px;box-shadow:0 30px 100px #000c;padding:0;max-height:min(88vh,820px);width:min(520px,calc(100% - 28px));overflow:auto}
+    dialog::backdrop{background:#020713b8;backdrop-filter:blur(5px)}
+    .modal-inner{padding:26px}
+    .modal-title{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .modal-title h2{margin:0;font-size:20px}
+    .iconbtn{background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:10px;width:36px;height:36px;font-size:22px;line-height:1}
+    .result-head{text-align:center;border:1px solid #31546a;border-radius:15px;background:linear-gradient(145deg,#1f3f52,#182c45);margin-top:18px;padding:24px 12px}
+    .result-head .big{font-size:clamp(45px,11vw,70px);font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-.065em}
+    .result-head .big span{font-size:18px;letter-spacing:0;color:var(--muted)}
+    .result-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+    .result-row div{border:1px solid var(--line);border-radius:10px;padding:13px 5px;text-align:center;color:var(--muted);font-size:11px}
+    .result-row strong{display:block;color:var(--ink);font-size:23px}
+    .result-actions{display:grid;gap:10px;margin-top:18px;grid-template-columns:1fr 1fr}
+    .fineprint{font-size:12px;color:var(--muted);margin-top:14px}
+    input[type=file]{display:none}
+    .manage-grid{display:grid;gap:10px;margin-top:18px}
+    .manage-grid .btn{text-align:left;white-space:normal}
+    .danger-zone{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{grid-template-columns:1fr 1fr}.sidebar .help-card{grid-column:span 2}.masthead{flex-wrap:wrap}.wrapper{max-width:740px}}
+    @media(max-width:640px){.wrapper{padding:22px 14px 125px}.masthead{margin-bottom:20px;display:block}.header-actions{justify-content:flex-start;margin-top:15px}.layout,.maincol,.sidebar{gap:15px}.sidebar{grid-template-columns:1fr}.sidebar .help-card{grid-column:auto}.card{border-radius:17px}.card-pad{padding:19px}.question-display{padding:18px 0 13px}.qnumber{font-size:82px}.mark-btn{min-height:70px;padding:14px 8px;font-size:17px}.mark-btn .symbol{font-size:29px}.action-foot{align-items:flex-start}.number-grid{grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}.number-grid button{font-size:10px;border-radius:5px}.segment-tabs button{padding:7px 10px}.mobile-dock{display:grid;grid-template-columns:54px 1fr 1fr 54px;align-items:stretch;gap:8px;position:fixed;z-index:30;bottom:0;left:0;right:0;padding:11px 14px calc(11px + env(safe-area-inset-bottom));border-top:1px solid #37516d;background:#0b1829ef;backdrop-filter:blur(20px);box-shadow:0 -10px 28px #03091388}.mobile-dock button{border:1px solid var(--line);border-radius:12px;min-height:51px;font-weight:850;background:#20334f;color:var(--ink)}.mobile-dock button.ok{background:var(--ok);color:#0a2c25;border:0;font-size:17px}.mobile-dock button.bad{background:var(--bad);color:#3b1921;border:0;font-size:17px}.mobile-dock button:active{filter:brightness(.87)}.toast{bottom:90px}.result-actions{grid-template-columns:1fr}.shortcuts{display:none}}
+    @media(max-width:350px){.number-grid{grid-template-columns:repeat(8,minmax(0,1fr))}.qnumber{font-size:67px}.header-actions .btn{padding:9px 10px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">INTRO QUIZ / SCORE TRACKER</p>
+        <h1>897問 イントロクイズ<br>採点ページ</h1>
+        <p class="subtitle">ラブライブ！シリーズ全897問。あなたの正解数を記録しよう。</p>
+      </div>
+      <div class="header-actions">
+        <span class="save-status" id="saveStatus"><i class="dot"></i>この端末に自動保存</span>
+        <button class="btn" id="manageBtn" type="button">データ管理</button>
+        <button class="btn primary" id="openResultBtn" type="button">結果を見る ↗</button>
+      </div>
+    </header>
+    <div class="layout">
+      <main class="maincol">
+        <section class="card question-card" aria-label="問題の採点">
+          <div class="card-pad">
+            <div class="question-top">
+              <span class="pill">● NOW PLAYING</span>
+              <span class="pill" id="currentStatus">未採点</span>
+            </div>
+            <div class="question-display">
+              <span class="overline">QUESTION</span>
+              <div class="qnumber"><span id="questionNum">001</span><span class="numsmall">/ 897</span></div>
+              <span class="qstate" id="questionHint">動画の答え合わせに合わせて記録</span>
+            </div>
+            <div class="action-grid">
+              <button type="button" class="mark-btn ok" id="correctBtn" aria-label="この問題を正解として記録"><span class="symbol">○</span> 正解</button>
+              <button type="button" class="mark-btn bad" id="wrongBtn" aria-label="この問題を不正解として記録"><span class="symbol">×</span> 不正解</button>
+            </div>
+            <div class="action-foot">
+              <div class="mini-actions">
+                <button type="button" class="btn plain" id="clearBtn">判定を消す</button>
+                <button type="button" class="btn plain" id="undoBtn" disabled>↶ 元に戻す</button>
+              </div>
+              <label class="check-label"><input type="checkbox" id="autoNext" checked>採点後に次へ進む</label>
+            </div>
+            <div class="move-controls">
+              <button type="button" class="btn" id="prevBtn">← 前の問題</button>
+              <button type="button" class="btn" id="nextBtn">次の問題 →</button>
+            </div>
+            <p class="shortcuts">キーボード：<kbd>1</kbd> 正解　<kbd>2</kbd> 不正解　<kbd>←</kbd><kbd>→</kbd> 移動　<kbd>0</kbd> 判定消去</p>
+          </div>
+        </section>
+        <section class="card" id="jumpCard" aria-labelledby="jumpTitle">
+          <div class="card-pad">
+            <div class="card-heading">
+              <div><h2 class="section-heading" id="jumpTitle">問題番号から探す</h2><p class="section-desc">番号を選ぶと、その問題に移動します。緑＝正解、ピンク＝不正解。</p></div>
+            </div>
+            <form id="jumpForm" class="jump-form">
+              <label for="jumpNumber">第</label>
+              <input id="jumpNumber" type="number" min="1" max="897" inputmode="numeric" placeholder="例：235" required />
+              <span class="section-desc">問</span>
+              <button type="submit" class="btn primary">移動</button>
+            </form>
+            <div role="tablist" aria-label="100問単位で移動" class="segment-tabs" id="segmentTabs"></div>
+            <div class="number-grid" id="numberGrid" aria-label="問題番号一覧"></div>
+            <div class="grid-bottom">
+              <span id="gridCount">表示区間</span>
+              <button type="button" class="btn plain" id="nextUnmarkedBtn">未採点の問題へ →</button>
+            </div>
+          </div>
+        </section>
+      </main>
+      <aside class="sidebar">
+        <section class="card" aria-labelledby="summaryTitle">
+          <div class="card-pad">
+            <h2 class="section-heading" id="summaryTitle">現在の成績</h2>
+            <p class="section-desc">記録内容は入力のたびに更新されます。</p>
+            <div class="stat-main">
+              <p class="stats-label">正解した問題</p>
+              <div class="stats-num"><strong id="correctCount">0</strong> <span>/ 897問</span></div>
+            </div>
+            <div class="progress" role="progressbar" aria-label="採点の進捗" aria-valuemin="0" aria-valuemax="897" aria-valuenow="0" id="overallProgress"><div class="green" id="overallCorrect" style="width:0%"></div><div class="pink" id="overallWrong" style="width:0%"></div></div>
+            <div class="legend"><span><i style="background:var(--ok)"></i>正解</span><span><i style="background:var(--bad)"></i>不正解</span><span><i style="background:#526887"></i>未採点</span></div>
+            <div class="small-stats">
+              <div class="small-stat"><strong id="wrongCount">0</strong><span>不正解</span></div>
+              <div class="small-stat"><strong id="remainingCount">897</strong><span>未採点</span></div>
+              <div class="small-stat"><strong id="doneCount">0</strong><span>採点済み</span></div>
+              <div class="small-stat"><strong id="percentCount">0%</strong><span>採点の進捗</span></div>
+            </div>
+            <div class="stat-actions">
+              <button type="button" class="btn primary" id="resultAsideBtn">採点結果を表示</button>
+              <button type="button" class="btn plain" id="firstUnmarkedBtn">次の未採点へ</button>
+            </div>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="segmentsTitle">
+          <div class="card-pad">
+            <h2 class="section-heading" id="segmentsTitle">100問ごとの集計</h2>
+            <p class="section-desc">タップで各区間の先頭に移動できます。</p>
+            <div class="segment-list" id="segmentList"></div>
+          </div>
+        </section>
+        <section class="card help-card">
+          <div class="card-pad">
+            <h2 class="section-heading">使い方・保存について</h2>
+            <ol class="help-list">
+              <li>動画を見ながら、正解なら<strong>○</strong>、不正解なら<strong>×</strong>を押します。</li>
+              <li>基本的に採点後は次の問題へ自動で進みます。あとから何度でも修正できます。</li>
+              <li><strong>採点結果はこのブラウザ内に自動保存</strong>します。ログインやデータ送信は不要です。</li>
+              <li>別の端末への引継ぎやデータ消去対策は、<strong>データ管理 → バックアップ</strong>をご利用ください。</li>
+              <li>Safariのプライベートブラウズやサイトデータの削除では保存が失われる場合があります。</li>
+            </ol>
+          </div>
+        </section>
+      </aside>
+    </div>
+    <footer>非公式ファン制作の採点補助ツールです。曲名・回答データは表示しません。<br>このページ単体で動作し、採点情報を外部サーバーへ送信しません。</footer>
+  </div>
+  <nav class="mobile-dock" aria-label="スマホ用の採点ボタン">
+    <button type="button" id="dockPrev" aria-label="前の問題">←</button>
+    <button type="button" class="ok" id="dockCorrect">○ 正解</button>
+    <button type="button" class="bad" id="dockWrong">× 不正解</button>
+    <button type="button" id="dockNext" aria-label="次の問題">→</button>
+  </nav>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <dialog id="resultsDialog" aria-labelledby="resultHeading">
+    <div class="modal-inner">
+      <div class="modal-title"><h2 id="resultHeading">あなたの採点結果</h2><button type="button" class="iconbtn" data-close="resultsDialog" aria-label="閉じる">×</button></div>
+      <div class="result-head">
+        <div class="eyebrow">YOUR SCORE</div>
+        <div class="big"><span id="modalCorrect">0</span><span> / 897</span></div>
+        <div id="modalStatus" class="fineprint">採点途中の結果です</div>
+      </div>
+      <div class="result-row">
+        <div><strong id="modalWrong">0</strong>不正解</div>
+        <div><strong id="modalRemaining">897</strong>未採点</div>
+        <div><strong id="modalRate">—</strong>採点済みの正答率</div>
+      </div>
+      <div class="result-actions">
+        <button type="button" class="btn primary" id="saveImageBtn">結果画像を保存</button>
+        <button type="button" class="btn" id="shareBtn">結果をシェア</button>
+        <button type="button" class="btn" id="copyBtn">結果テキストをコピー</button>
+        <button type="button" class="btn" data-close="resultsDialog">採点に戻る</button>
+      </div>
+      <p class="fineprint">結果画像には正解数・不正解数・未採点数が入ります。途中経過でも作成できます。</p>
+    </div>
+  </dialog>
+  <dialog id="manageDialog" aria-labelledby="manageHeading">
+    <div class="modal-inner">
+      <div class="modal-title"><h2 id="manageHeading">データ管理</h2><button type="button" class="iconbtn" data-close="manageDialog" aria-label="閉じる">×</button></div>
+      <p class="fineprint">通常は自動保存されます。長時間の挑戦では、念のためバックアップを取っておくと安心です。</p>
+      <div class="manage-grid">
+        <button type="button" class="btn" id="exportJsonBtn">↓ バックアップを保存（JSON）</button>
+        <button type="button" class="btn" id="importJsonBtn">↑ バックアップから復元（JSON）</button>
+        <button type="button" class="btn" id="exportCsvBtn">↓ 897問の記録をCSVで保存</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" />
+      <div class="danger-zone"><button type="button" class="btn danger" id="resetBtn">すべての採点をリセット</button><p class="fineprint">リセット後は元に戻せません。必要なら先にJSONを保存してください。</p></div>
+    </div>
+  </dialog>
+  <script>
+  (() => {
+    'use strict';
+    const TOTAL = 897;
+    const KEY = 'intro-quiz-897-scores-v1';
+    const el = id => document.getElementById(id);
+    const answers = Array(TOTAL).fill(0);
+    let current = 1;
+    let autoNext = true;
+    let selectedSegment = 0;
+    let undoState = null;
+    let stored = false;
+    let toastTimer = null;
+    const ranges = Array.from({length:Math.ceil(TOTAL/100)},(_,i)=>({from:i*100+1,to:Math.min((i+1)*100,TOTAL)}));
+    const pad = n => String(n).padStart(3,'0');
+    const escapeCSV = s => '"'+String(s).replace(/"/g,'""')+'"';
+    const count = () => {
+      let right=0,wrong=0;
+      for(const a of answers){if(a===1)right++;else if(a===-1)wrong++;}
+      return {right,wrong,done:right+wrong,remaining:TOTAL-right-wrong};
+    };
+    const stamp = () => new Date().toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const toast = msg => {
+      const item=el('toast');item.textContent=msg;item.classList.add('show');
+      clearTimeout(toastTimer);toastTimer=setTimeout(()=>item.classList.remove('show'),2500);
+    };
+    const save = () => {
+      try {
+        localStorage.setItem(KEY,JSON.stringify({version:1,total:TOTAL,answers,current,autoNext,updatedAt:new Date().toISOString()}));
+        stored=true;
+        el('saveStatus').innerHTML='<i class="dot"></i>自動保存済み · '+stamp();
+      } catch(e) {
+        stored=false;
+        el('saveStatus').innerHTML='<i class="dot warning"></i>保存できません・バックアップ推奨';
+      }
+    };
+    const load = () => {
+      try{
+        const raw=localStorage.getItem(KEY);
+        if(!raw)return;
+        const data=JSON.parse(raw);
+        if(!data||data.total!==TOTAL||!Array.isArray(data.answers)||data.answers.length!==TOTAL)return;
+        if(!data.answers.every(v=>[0,1,-1].includes(v)))return;
+        answers.splice(0,TOTAL,...data.answers);
+        if(Number.isInteger(data.current)&&data.current>=1&&data.current<=TOTAL)current=data.current;
+        if(typeof data.autoNext==='boolean')autoNext=data.autoNext;
+      }catch(e){ /* Ignore malformed or blocked localStorage. */ }
+    };
+    const labelFor = v => v===1?'正解':v===-1?'不正解':'未採点';
+    const currentTo = n => {
+      const parsed=Number(n);
+      if(!Number.isInteger(parsed)||parsed<1||parsed>TOTAL)return false;
+      current=parsed;selectedSegment=Math.floor((n-1)/100);
+      render();save();return true;
+    };
+    const mark = v => {
+      const index=current-1;
+      undoState={index,prior:answers[index],previousCurrent:current};
+      answers[index]=v;
+      if(autoNext&&current<TOTAL)current++;
+      render();save();
+      if(current===TOTAL&&answers[TOTAL-1]!==0&&count().remaining===0)toast('897問すべて採点完了！「結果を見る」から確認できます');
+    };
+    const clear = () => {
+      const index=current-1;
+      if(answers[index]===0){toast('この問題はまだ採点されていません');return;}
+      undoState={index,prior:answers[index],previousCurrent:current};answers[index]=0;
+      render();save();toast('判定を消しました');
+    };
+    const undo = () => {
+      if(!undoState)return;
+      answers[undoState.index]=undoState.prior;
+      current=undoState.previousCurrent;
+      undoState=null;render();save();toast('直前の操作を元に戻しました');
+    };
+    const findUnmarked = () => {
+      const start=current;
+      for(let j=0;j<TOTAL;j++){
+        const candidate=(start+j)%TOTAL+1;
+        if(answers[candidate-1]===0){currentTo(candidate);toast('第'+candidate+'問（未採点）に移動しました');return;}
+      }
+      toast('すべての問題が採点済みです！');
+    };
+    const renderTabs = () => {
+      const tabHost=el('segmentTabs');tabHost.replaceChildren();
+      ranges.forEach((r,i)=>{
+        const b=document.createElement('button');b.type='button';b.role='tab';
+        b.textContent=`${r.from}〜${r.to}`;b.setAttribute('aria-selected',String(selectedSegment===i));
+        b.onclick=()=>{selectedSegment=i;renderTabs();renderGrid();};
+        tabHost.appendChild(b);
+      });
+    };
+    const renderGrid = () => {
+      const range=ranges[selectedSegment], grid=el('numberGrid');
+      grid.replaceChildren();
+      for(let n=range.from;n<=range.to;n++){
+        const button=document.createElement('button');const a=answers[n-1];
+        button.type='button';button.textContent=pad(n);button.className=(a===1?'ok':a===-1?'bad':'')+(n===current?' current':'');
+        button.setAttribute('aria-label',`第${n}問：${labelFor(a)}`);
+        if(n===current)button.setAttribute('aria-current','true');
+        button.onclick=()=>currentTo(n);
+        grid.appendChild(button);
+      }
+      el('gridCount').textContent=`第${range.from}〜${range.to}問 ／ ○ ${answers.slice(range.from-1,range.to).filter(v=>v===1).length} ／ × ${answers.slice(range.from-1,range.to).filter(v=>v===-1).length}`;
+    };
+    const renderSegments = () => {
+      const list=el('segmentList');list.replaceChildren();
+      ranges.forEach(r=>{
+        const slice=answers.slice(r.from-1,r.to);
+        const right=slice.filter(v=>v===1).length;
+        const wrong=slice.filter(v=>v===-1).length;
+        const b=document.createElement('button');b.type='button';b.className='segment-row';
+        b.setAttribute('aria-label',`第${r.from}〜${r.to}問：正解${right}、不正解${wrong}。先頭へ移動`);
+        const info=document.createElement('div');info.className='segment-info';
+        const name=document.createElement('strong');name.textContent=`${r.from}〜${r.to}問`;
+        const val=document.createElement('span');val.textContent=`○ ${right} / × ${wrong} / ${r.to-r.from+1}`;
+        info.append(name,val);
+        const progress=document.createElement('div');progress.className='segment-progress';
+        const correct=document.createElement('div');correct.className='correct';correct.style.width=(right/slice.length*100)+'%';
+        const incorrect=document.createElement('div');incorrect.className='wrong';incorrect.style.width=(wrong/slice.length*100)+'%';
+        progress.append(correct,incorrect);b.append(info,progress);
+        b.onclick=()=>{currentTo(r.from);el('jumpCard').scrollIntoView({behavior:'smooth',block:'start'});};
+        list.appendChild(b);
+      });
+    };
+    const render = () => {
+      const a=answers[current-1],c=count();
+      selectedSegment=Math.floor((current-1)/100);
+      el('questionNum').textContent=pad(current);
+      el('currentStatus').textContent=labelFor(a);
+      el('currentStatus').className='pill '+(a===1?'ok':a===-1?'bad':'');
+      el('questionHint').textContent=a===1?'この問題は正解として記録されています':a===-1?'この問題は不正解として記録されています':'動画の答え合わせに合わせて記録';
+      el('prevBtn').disabled=el('dockPrev').disabled=current===1;
+      el('nextBtn').disabled=el('dockNext').disabled=current===TOTAL;
+      el('undoBtn').disabled=undoState===null;
+      el('autoNext').checked=autoNext;
+      el('correctCount').textContent=c.right;
+      el('wrongCount').textContent=c.wrong;
+      el('remainingCount').textContent=c.remaining;
+      el('doneCount').textContent=c.done;
+      el('percentCount').textContent=(c.done/TOTAL*100).toFixed(1)+'%';
+      el('overallProgress').setAttribute('aria-valuenow',String(c.done));
+      el('overallCorrect').style.width=c.right/TOTAL*100+'%';
+      el('overallWrong').style.width=c.wrong/TOTAL*100+'%';
+      renderTabs();renderGrid();renderSegments();
+    };
+    const openResults = () => {
+      const c=count();
+      el('modalCorrect').textContent=c.right;
+      el('modalWrong').textContent=c.wrong;
+      el('modalRemaining').textContent=c.remaining;
+      el('modalRate').textContent=c.done?Math.round(c.right/c.done*100)+'%':'—';
+      el('modalStatus').textContent=c.remaining===0?'全897問の採点が完了しました！':`採点途中：${c.done} / ${TOTAL}問を採点済み`;
+      el('resultsDialog').showModal();
+    };
+    const resultText = () => {
+      const c=count();
+      return `ラブライブ！シリーズ 897問イントロクイズ\n正解：${c.right} / 897問\n不正解：${c.wrong}問\n未採点：${c.remaining}問\n${c.remaining===0?'全問採点完了！':'挑戦途中の記録'}`;
+    };
+    const downloadBlob = (blob,name) => {
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();
+      setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},2500);
+    };
+    const exportJson = () => {
+      const data={version:1,total:TOTAL,answers,current,autoNext,exportedAt:new Date().toISOString()};
+      downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'intro-quiz-897-backup.json');
+      toast('バックアップを保存しました');
+    };
+    const exportCsv = () => {
+      const csv='\ufeff'+['問題番号,判定',''+answers.map((v,i)=>`${i+1},${escapeCSV(labelFor(v))}`).join('\r\n')].join('\r\n');
+      downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'intro-quiz-897-record.csv');
+      toast('CSVを保存しました');
+    };
+    const importJson = async file => {
+      if(!file)return;
+      try{
+        const data=JSON.parse(await file.text());
+        if(data.total!==TOTAL||!Array.isArray(data.answers)||data.answers.length!==TOTAL||!data.answers.every(a=>[0,1,-1].includes(a)))throw Error('data');
+        if(!confirm('現在の採点をバックアップの記録で上書きします。よろしいですか？'))return;
+        answers.splice(0,TOTAL,...data.answers);
+        current=Number.isInteger(data.current)&&data.current>=1&&data.current<=TOTAL?data.current:1;
+        autoNext=typeof data.autoNext==='boolean'?data.autoNext:true;
+        undoState=null;render();save();el('manageDialog').close();toast('採点記録を復元しました');
+      }catch(e){alert('正しい897問用バックアップファイルではありません。JSONファイルをご確認ください。');}
+    };
+    const saveImage = async () => {
+      const c=count();
+      const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
+      const ctx=canvas.getContext('2d');
+      if(!ctx){toast('画像を作成できませんでした');return;}
+      const grad=ctx.createLinearGradient(0,0,1200,630);grad.addColorStop(0,'#0b1528');grad.addColorStop(1,'#1a3f56');ctx.fillStyle=grad;ctx.fillRect(0,0,1200,630);
+      ctx.fillStyle='#5bdbb3';ctx.fillRect(74,76,11,70);
+      ctx.fillStyle='#9de9df';ctx.font='bold 25px -apple-system, "Yu Gothic", sans-serif';ctx.fillText('INTRO QUIZ / SCORE TRACKER',105,103);
+      ctx.fillStyle='#f5f8ff';ctx.font='bold 54px -apple-system, "Yu Gothic", sans-serif';ctx.fillText('897問 イントロクイズ',80,186);
+      ctx.font='bold 29px -apple-system, "Yu Gothic", sans-serif';ctx.fillStyle='#b7c7de';ctx.fillText('MY SCORE',82,263);
+      ctx.fillStyle='#5bdbb3';ctx.font='bold 153px -apple-system, "Yu Gothic", sans-serif';ctx.fillText(String(c.right),79,438);
+      const width=ctx.measureText(String(c.right)).width;
+      ctx.fillStyle='#b7c7de';ctx.font='bold 41px -apple-system, "Yu Gothic", sans-serif';ctx.fillText('/ 897問',92+width,433);
+      ctx.fillStyle='#ff8d9b';ctx.fillRect(78,478,1010,3);
+      ctx.fillStyle='#d8e6f2';ctx.font='bold 27px -apple-system, "Yu Gothic", sans-serif';ctx.fillText(`不正解  ${c.wrong}問`,82,542);
+      ctx.fillText(`未採点  ${c.remaining}問`,420,542);
+      ctx.fillStyle='#9eb3cc';ctx.font='19px -apple-system, "Yu Gothic", sans-serif';ctx.fillText(c.remaining===0?'全897問 採点完了！':'挑戦途中の採点結果',816,545);
+      canvas.toBlob(blob=>{if(blob){downloadBlob(blob,'intro-quiz-897-result.png');toast('結果画像を保存しました');}else toast('画像保存に失敗しました');},'image/png');
+    };
+    const copyText = async () => {
+      try{await navigator.clipboard.writeText(resultText());toast('結果をコピーしました');}
+      catch(e){toast('コピーできませんでした。共有ボタンをお試しください');}
+    };
+    const share = async () => {
+      if(navigator.share){try{await navigator.share({title:'897問イントロクイズ 採点結果',text:resultText()});return;}catch(e){if(e.name==='AbortError')return;}}
+      await copyText();
+    };
+    const bind = (id,event,fn) => el(id).addEventListener(event,fn);
+    load();render();save();
+    bind('correctBtn','click',()=>mark(1));bind('wrongBtn','click',()=>mark(-1));
+    bind('dockCorrect','click',()=>mark(1));bind('dockWrong','click',()=>mark(-1));
+    bind('clearBtn','click',clear);bind('undoBtn','click',undo);
+    bind('prevBtn','click',()=>currentTo(current-1));bind('nextBtn','click',()=>currentTo(current+1));
+    bind('dockPrev','click',()=>currentTo(current-1));bind('dockNext','click',()=>currentTo(current+1));
+    bind('autoNext','change',e=>{autoNext=e.target.checked;save();});
+    bind('jumpForm','submit',e=>{e.preventDefault();if(currentTo(Number(el('jumpNumber').value))){el('jumpNumber').blur();toast('第'+current+'問に移動しました');}else toast('1〜897の番号を入力してください');});
+    bind('nextUnmarkedBtn','click',findUnmarked);bind('firstUnmarkedBtn','click',findUnmarked);
+    bind('openResultBtn','click',openResults);bind('resultAsideBtn','click',openResults);
+    bind('manageBtn','click',()=>el('manageDialog').showModal());
+    document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>el(b.dataset.close).close()));
+    document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close();}));
+    bind('exportJsonBtn','click',exportJson);bind('exportCsvBtn','click',exportCsv);
+    bind('importJsonBtn','click',()=>el('importFile').click());
+    bind('importFile','change',async e=>{await importJson(e.target.files?.[0]);e.target.value='';});
+    bind('resetBtn','click',()=>{
+      if(!confirm('897問すべての採点記録を削除します。実行しますか？\nこの操作は取り消せません。'))return;
+      answers.fill(0);current=1;undoState=null;render();save();el('manageDialog').close();toast('採点をリセットしました');
+    });
+    bind('copyBtn','click',copyText);bind('shareBtn','click',share);bind('saveImageBtn','click',saveImage);
+    document.addEventListener('keydown',e=>{
+      const tag=e.target?.tagName;
+      if(e.ctrlKey||e.metaKey||e.altKey||tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.querySelector('dialog[open]'))return;
+      if(e.key==='1'){e.preventDefault();mark(1);}
+      else if(e.key==='2'){e.preventDefault();mark(-1);}
+      else if(e.key==='0'){e.preventDefault();clear();}
+      else if(e.key==='ArrowLeft'){e.preventDefault();currentTo(current-1);}
+      else if(e.key==='ArrowRight'){e.preventDefault();currentTo(current+1);}
+    });
+    // Compatibility with older Safari: warn rather than silently losing progress.
+    if(!stored)toast('自動保存が使えません。データ管理から定期的にバックアップしてください');
+  })();
+  </script>
+</body>
+</html>
